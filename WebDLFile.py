@@ -30,6 +30,7 @@ class WebDLFile(object):
         self.all_sha256_hashes = []
         # # Test
         # self.sha256_hash = "00001112E046D8BBF8B5529A9ECB39920F828209EF4ABFEB95AAB46D41F56A7D"
+        self.read_apk_csv()
 
         self.target_url = "https://androzoo.uni.lu/api/download"
 
@@ -65,6 +66,7 @@ class WebDLFile(object):
         #out_file_name = self.sha256_hash + ".apk"
         #resp = requests.post(self.target_url, data = url_params)
         resp = requests.get(self.target_url, params=url_params, stream=True)
+        self.logger.debug("-------------------------------------------------------")
         self.logger.debug("Response Status Code: %s" % resp.status_code)
         if resp.status_code == 200:
             # Get original filename out of HTTP headers
@@ -79,10 +81,18 @@ class WebDLFile(object):
                 shutil.copyfileobj(resp.raw, out_file)
                 self.logger.info("Successful Download: %s" % original_filename)
 
+    def download_all_APK_files(self):
+
+        for single_sha256 in self.all_sha256_hashes:
+            self.logger.debug("Downloading: %s.apk" % str(single_sha256))
+            self.download_file(single_sha256)
+            self.logger.debug("-------------------------------------------------------")
+
 
 
 downloader = WebDLFile()
 #downloader.load_config_file()
-downloader.read_apk_csv()
-
+#downloader.read_apk_csv()
 #downloader.download_file()
+
+downloader.download_all_APK_files()
