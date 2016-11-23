@@ -1,5 +1,6 @@
 import logging
 import json
+import csv
 
 import requests
 import shutil
@@ -20,26 +21,47 @@ class WebDLFile(object):
 
         # Initialize basic params
         self.config_file_path = "configs/configs.json"
-        self.api_key = self.load_config_file()
+
+        config_json = self.load_config_file()
+        self.apk_list_filename = "first-20.csv"
+        self.apk_list_path = config_json['apk_list_path']
+        self.api_key = config_json['api_key']
+
+        self.all_sha256_hashes = []
+        # # Test
+        # self.sha256_hash = "00001112E046D8BBF8B5529A9ECB39920F828209EF4ABFEB95AAB46D41F56A7D"
 
         self.target_url = "https://androzoo.uni.lu/api/download"
-
-        # Test
-        self.sha256_hash = "00001112E046D8BBF8B5529A9ECB39920F828209EF4ABFEB95AAB46D41F56A7D"
 
         self.output_file_path = "/home/irvin/AndroZoo_APKs/"
 
     def load_config_file(self):
         # apikey_on_file = ""
         with open(self.config_file_path) as json_config_file:
-            data = json.load(json_config_file)
+            json_data = json.load(json_config_file)
 
-        self.logger.debug(data)
-        api_key_on_file = data['api_key']
-        return api_key_on_file
+        self.logger.debug(json_data)
+        # api_key_on_file = data['api_key']
+        # self.apk_list_path = data['apk_list_path']
+        # return api_key_on_file
+        return json_data
 
-    def download_file(self):
-        url_params = {"apikey": self.api_key, "sha256": self.sha256_hash}
+    def read_apk_csv(self):
+        full_apk_list_path = self.apk_list_path + self.apk_list_filename
+        self.logger.debug("APK list full path: %s" % full_apk_list_path)
+
+        with open(full_apk_list_path, mode='r', newline='') as csvfile:
+            sha256_hash_rdr = csv.reader(csvfile, delimiter=',')
+            # Skip first line (header)
+            next(sha256_hash_rdr)
+
+            self.logger.info("Opened config file ...")
+            for row in sha256_hash_rdr:
+                self.all_sha256_hashes.append(row[0])
+        self.logger.info("Finished loading [ %i ] hashes" % len(self.all_sha256_hashes))
+
+    def download_file(self, curr_sha256_hash):
+        url_params = {"apikey": self.api_key, "sha256": curr_sha256_hash}
         #out_file_name = self.sha256_hash + ".apk"
         #resp = requests.post(self.target_url, data = url_params)
         resp = requests.get(self.target_url, params=url_params, stream=True)
@@ -61,4 +83,6 @@ class WebDLFile(object):
 
 downloader = WebDLFile()
 #downloader.load_config_file()
-downloader.download_file()
+downloader.read_apk_csv()
+
+#downloader.download_file()
